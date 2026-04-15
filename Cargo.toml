@@ -1,21 +1,26 @@
 [package]
 name = "mosaic"
-authors = ["Antonio32A"]
+authors = ["Antonio32A", "Deer-Spangle", "dangered wolf", "Syfaro"]
 license = "MIT"
 version = "1.0.0"
 edition = "2021"
 
 [dependencies]
-axum = "0.5.10"
-bytes = "1.2.1"
-const_format = "0.2.26"
-futures = "0.3.21"
-image = "0.24.2"
-lazy_static = "1.4.0"
-reqwest = { version = "0.11.11", default-features = false, features = ["rustls-tls-webpki-roots"] }
-serde = { version = "1.0.143", features = ["derive"] }
-tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
-tower-http = { version = "0.3.4", features = ["trace"] }
-tracing = "0.1.36"
-tracing-subscriber = "0.3.15"
-webp = "0.2.2"
+axum = "0.8"
+bytes = "1"
+const_format = "0.2"
+futures = "0.3"
+image = "0.25"
+lazy_static = "1.5"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls-webpki-roots"] }
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "sync"] }
+tower-http = { version = "0.6", features = ["trace"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+webp = "0.3"
+
+# Linux: glibc malloc often holds a high RSS watermark after image workloads; jemalloc
+# typically releases memory back to the OS more predictably.
+[target.'cfg(target_os = "linux")'.dependencies]
+tikv-jemallocator = "0.6"
