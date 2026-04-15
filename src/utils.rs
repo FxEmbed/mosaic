@@ -38,6 +38,7 @@ use lazy_static::lazy_static;
 use reqwest::header::{HeaderMap, HeaderValue};
 use tracing::instrument;
 
+use crate::config::ContentProvider;
 use crate::ImageType;
 
 const FAKE_CHROME_VERSION: &str = "103";
@@ -90,7 +91,7 @@ pub fn image_response(img: RgbImage, encoder: ImageType) -> Result<impl IntoResp
                 img.as_bytes(),
                 img.width(),
                 img.height(),
-                image::ColorType::Rgb8,
+                image::ColorType::Rgb8.into(),
             )?;
             out.to_vec()
         }
@@ -102,7 +103,7 @@ pub fn image_response(img: RgbImage, encoder: ImageType) -> Result<impl IntoResp
                 img.as_bytes(),
                 img.width(),
                 img.height(),
-                image::ColorType::Rgb8,
+                image::ColorType::Rgb8.into(),
             )?;
             out.to_vec()
         }
@@ -122,7 +123,18 @@ pub fn image_response(img: RgbImage, encoder: ImageType) -> Result<impl IntoResp
 }
 
 #[instrument(skip(client))]
-pub async fn fetch_image(client: &reqwest::Client, id: &str) -> Option<RgbImage> {
+pub async fn fetch_image(
+    client: &reqwest::Client,
+    provider: ContentProvider,
+    id: &str,
+) -> Option<RgbImage> {
+    match provider {
+        ContentProvider::Twitter => fetch_twitter_image(client, id).await,
+        ContentProvider::Bluesky => fetch_bluesky_image(client, id).await,
+    }
+}
+
+async fn fetch_twitter_image(client: &reqwest::Client, id: &str) -> Option<RgbImage> {
     tracing::trace!("starting to download image");
 
     let start = Instant::now();
@@ -137,6 +149,29 @@ pub async fn fetch_image(client: &reqwest::Client, id: &str) -> Option<RgbImage>
         .await
         .ok()?;
 
+    download_image_body(&mut resp, start).await
+}
+
+async fn fetch_bluesky_image(client: &reqwest::Client, id: &str) -> Option<RgbImage> {
+    tracing::trace!("starting to download Bluesky image");
+
+    let start = Instant::now();
+    let path_id = id.replace('_', "/");
+
+    let mut resp = client
+        .get(format!(
+            "https://cdn.bsky.app/img/feed_fullsize/plain/{}@jpeg",
+            path_id
+        ))
+        .headers(FETCH_HEADERS.clone())
+        .send()
+        .await
+        .ok()?;
+
+    download_image_body(&mut resp, start).await
+}
+
+async fn download_image_body(resp: &mut reqwest::Response, start: Instant) -> Option<RgbImage> {
     let mut buf = BytesMut::new();
 
     while let Some(chunk) = resp.chunk().await.ok()? {

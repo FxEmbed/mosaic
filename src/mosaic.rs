@@ -89,24 +89,14 @@ fn scale_width_dimension(image_size: Size, other_width: u32) -> Size {
 fn resize_images(images: Vec<(RgbImage, Size)>) -> Vec<RgbImage> {
     tracing::debug!("resizing {} images", images.len());
 
-    let span = tracing::Span::current();
+    let _span = tracing::Span::current().entered();
 
-    let images: Vec<_> = images
-        .into_iter()
-        .map(|(im, size)| {
-            let span = span.clone();
-
-            std::thread::spawn(move || {
-                let _span = span.entered();
-                resize_image(im, size)
-            })
-        })
-        .collect::<Vec<_>>() // eagerly evaluate map to spawn threads
-        .into_iter()
-        .map(|thread| thread.join().unwrap())
-        .collect();
-
+    // Resize one image at a time so we never hold multiple full-size decode buffers
+    // inside concurrent resizes (each resize temporarily needs source + destination).
     images
+        .into_iter()
+        .map(|(im, size)| resize_image(im, size))
+        .collect()
 }
 
 #[instrument(skip(image, size))]
