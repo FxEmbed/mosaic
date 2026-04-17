@@ -1,0 +1,104 @@
+name: Docker Publish
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write # Needed to push to GHCR
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [amd64, arm64]
+        include:
+          - platform: amd64
+            runner: ubuntu-latest
+          - platform: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get SHA tag
+        id: sha_tag
+        run: echo "short_sha=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
+        
+      - name: Convert repo name to lowercase
+        id: repo_name
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          echo "image=ghcr.io/${OWNER}/${REPO}" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ steps.repo_name.outputs.image }}:${{ matrix.platform }}-${{ steps.sha_tag.outputs.short_sha }}
+            ${{ steps.repo_name.outputs.image }}:${{ matrix.platform }}-latest
+          cache-from: type=gha,scope=build-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.platform }}
+          # Disable provenance attestation which creates manifest lists
+          provenance: false
+
+  create-manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get SHA tag
+        id: sha_tag
+        run: echo "short_sha=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
+          
+      - name: Install Docker CLI plugins
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          curl -SL https://github.com/docker/buildx/releases/download/v0.11.2/buildx-v0.11.2.linux-amd64 -o ~/.docker/cli-plugins/docker-buildx
+          curl -SL https://github.com/docker/manifest/releases/download/v1.0.3/docker-manifest.linux-amd64 -o ~/.docker/cli-plugins/docker-manifest
+          chmod +x ~/.docker/cli-plugins/docker-buildx
+          chmod +x ~/.docker/cli-plugins/docker-manifest
+          docker manifest --help
+
+      - name: Create and push manifests
+        run: |
+          # Convert repository name to lowercase (Docker requirement)
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER}/${REPO}"
+          SHA="${{ steps.sha_tag.outputs.short_sha }}"
+          
+          # Create and push SHA manifest
+          docker manifest create ${IMAGE}:${SHA} \
+            ${IMAGE}:amd64-${SHA} \
+            ${IMAGE}:arm64-${SHA}
+          docker manifest push ${IMAGE}:${SHA}
+          
+          # Create and push latest manifest
+          docker manifest create ${IMAGE}:latest \
+            ${IMAGE}:amd64-latest \
+            ${IMAGE}:arm64-latest
+          docker manifest push ${IMAGE}:latest
