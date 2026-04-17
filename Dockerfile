@@ -1,8 +1,8 @@
-FROM rust:alpine3.22 as builder
+FROM rust:alpine3.22 AS builder
 WORKDIR /usr/src/mosaic
 
-# Install build dependencies for musl libc (what Alpine uses)
-RUN apk add --no-cache musl-dev
+# musl headers + C toolchain (make, gcc): required by tikv-jemalloc-sys
+RUN apk add --no-cache musl-dev build-base
 
 COPY . .
 RUN cargo install --path .

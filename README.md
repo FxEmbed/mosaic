@@ -1,7 +1,7 @@
-# FixTweet Mosaic
+# FxEmbed Mosaic
 ![](https://skillicons.dev/icons?i=rust)
 
-Mosaic is the name of FixTweet's multi-image combining component. It takes a list of images in its URL and automatically pulls and stitches them.
+Mosaic is the name of FxEmbed's multi-image combining component. It takes a list of images in its URL and automatically pulls and stitches them.
 
 Example URL: `https://mosaic.fxtwitter.com/jpeg/1692367302300172424/F3x-ebzWgAACauT/F3x-eb3XUAAnEEb`
 
