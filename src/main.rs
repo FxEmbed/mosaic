@@ -41,7 +41,7 @@ use serde::Deserialize;
 use tokio::sync::Semaphore;
 use tracing::instrument;
 
-use crate::config::AppConfig;
+use crate::config::{AppConfig, ContentProvider};
 use crate::mosaic::mosaic;
 use crate::utils::{fetch_image, image_response};
 
@@ -85,17 +85,9 @@ async fn handle(
         .and_then(|h| h.to_str().ok())
         .unwrap_or("");
 
-    let Some(provider) = config.provider_for_host(host) else {
-        return (
-            StatusCode::BAD_REQUEST,
-            format!(
-                "Unknown host: '{}'. This server expects requests on one of the \
-                 configured mosaic domains (see MOSAIC_DOMAINS and BLUESKY_MOSAIC_DOMAINS).",
-                host
-            ),
-        )
-            .into_response();
-    };
+    let provider = config
+        .provider_for_host(host)
+        .unwrap_or(ContentProvider::Twitter);
 
     let image_ids: Vec<_> = path
         .image_ids
