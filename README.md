@@ -5,7 +5,7 @@ Mosaic is the name of FxEmbed's multi-image combining component. It takes a list
 
 Example URL: `https://mosaic.fxtwitter.com/jpeg/1692367302300172424/F3x-ebzWgAACauT/F3x-eb3XUAAnEEb`
 
-Wherein the schema is /:format/:tweet_id/:list_of/:image_ids. Up to 4 images may be specified. JPEG and WebP are supported as formats. WebP takes considerably longer to compress, but provides smaller images. FixTweet currently only natively uses JPEG for the broadest compatibility and fastest response times for users.
+Wherein the schema is /:format/:tweet_id/:list_of/:image_ids. Up to 4 images may be specified. JPEG and WebP are supported as formats. WebP takes considerably longer to compress, but provides smaller images. FxEmbed currently only natively uses JPEG for the broadest compatibility and fastest response times for users.
 
 Mosaic is written in Rust for its balance of blazing fast performance (very important here!), memory safety, and availability of 3rd party Cargo packages.
 
@@ -25,7 +25,7 @@ You can also build a Docker image with `docker build -t mosaic .` and run it wit
 
 Credits:
 - [Antonio32A](https://github.com/Antonio32A) (writing Rust version)
-- [dangered wolf](https://github.com/dangeredwolf) ([Original TypeScript reference](https://github.com/FixTweet/mosaic-reference) and minor improvements)
+- [dangered wolf](https://github.com/dangeredwolf) ([Original TypeScript reference](https://github.com/FxEmbed/mosaic-reference) and minor improvements)
 - [Deer-Spangle](https://github.com/Deer-Spangle) (Improved image stitching algorithm)
 - [Syfaro](https://github.com/Syfaro) (Rust server/implementation improvements)
 

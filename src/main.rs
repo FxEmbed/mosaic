@@ -253,9 +253,9 @@ async fn async_main(max_concurrent: usize, config: Arc<AppConfig>) {
         .unwrap_or_else(|_err| "3030".to_string())
         .parse()
         .expect("PORT was invalid");
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-    tracing::info!("starting fixtweet-mosaic on {}", addr);
+    tracing::info!("starting fxembed-mosaic on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
